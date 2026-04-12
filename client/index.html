@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatApp — Đăng nhập</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --theme-color: #2a2c30;
+      --glow-rgb: 42, 44, 48;
+      --shade: #2c2c2c;
+      --bulb: #1a1a1a;
+      --light-op: 0;
+      --btn-text: #888;
+      --btn-bg: #2a2c30;
+      --card-border: #1e2530;
+      --font: 'Poppins', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    .container {
+      display: flex;
+      width: 100%;
+      max-width: 1100px;
+      min-height: 600px;
+      padding: 2rem;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    /* ── Lamp ── */
+    .lamp-section {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .lamp-svg { width: 100%; max-width: 320px; height: auto; overflow: visible; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5)); }
+    .shade-main { fill: var(--shade); transition: fill .6s ease; }
+    .shade-inner { fill: var(--bulb); transition: fill .6s ease; }
+    .light-cone { opacity: var(--light-op); transition: opacity .6s ease; }
+    .face-sleep { transition: opacity .3s ease; }
+    .face-awake { opacity: 0; transition: opacity .3s ease; }
+
+    .pull-string-group {
+      cursor: pointer;
+      transform-origin: top;
+      transition: transform .2s cubic-bezier(.175,.885,.32,1.275);
+    }
+    .pull-string-group:hover .string-handle { stroke: #fff; }
+
+    .lamp-glow {
+      position: absolute;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(var(--glow-rgb), .18) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: -1;
+      transition: background .6s ease;
+      pointer-events: none;
+    }
+
+    /* ── Login Card ── */
+    .login-section {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(14, 20, 28, 0.75);
+      backdrop-filter: blur(14px);
+      padding: 2.8rem 2.5rem;
+      border-radius: 22px;
+      border: 2px solid var(--theme-color);
+      box-shadow: 0 0 35px rgba(var(--glow-rgb), .18), inset 0 0 20px rgba(255,255,255,.02);
+      transition: border-color .6s, box-shadow .6s;
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .card-header .logo {
+      font-size: 2rem;
+      margin-bottom: .4rem;
+    }
+    .card-header h2 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -.5px;
+    }
+    .card-header p {
+      font-size: .85rem;
+      color: #666;
+      margin-top: .3rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #0f1520;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 1.8rem;
+      border: 1px solid #1e2530;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: .55rem;
+      border: none;
+      background: transparent;
+      color: #666;
+      font-family: var(--font);
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all .3s;
+    }
+    .tab-btn.active {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      box-shadow: 0 2px 10px rgba(var(--glow-rgb), .3);
+    }
+
+    /* Form panels */
+    .form-panel { display: none; }
+    .form-panel.active { display: block; }
+
+    .input-group {
+      margin-bottom: 1.2rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .input-group label {
+      font-size: .8rem;
+      color: #888;
+      margin-bottom: .4rem;
+      font-weight: 500;
+      letter-spacing: .3px;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap .icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      color: #555;
+      pointer-events: none;
+    }
+    .input-group input {
+      width: 100%;
+      background: #0d1420;
+      border: 1.5px solid #1e2530;
+      padding: .85rem 1rem .85rem 2.6rem;
+      border-radius: 10px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    .input-group input::placeholder { color: #444; }
+    .input-group input:focus {
+      border-color: var(--theme-color);
+      box-shadow: 0 0 12px rgba(var(--glow-rgb), .3);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: .9rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      font-family: var(--font);
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: .5rem;
+      letter-spacing: .3px;
+      transition: all .4s;
+      position: relative;
+      overflow: hidden;
+    }
+    .submit-btn:hover { filter: brightness(1.12); transform: translateY(-2px); }
+    .submit-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .submit-btn .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .submit-btn.loading .spinner { display: block; }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    .forgot { display: block; text-align: center; margin-top: 1.2rem; color: #555; font-size: .82rem; text-decoration: none; transition: color .3s; }
+    .forgot:hover { color: #fff; }
+
+    .toast {
+      position: fixed; top: 1.5rem; right: 1.5rem;
+      padding: .85rem 1.4rem; border-radius: 10px;
+      font-size: .88rem; font-weight: 500;
+      opacity: 0; transform: translateY(-10px);
+      transition: all .3s; z-index: 1000;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #1a3a2a; border: 1px solid #22c55e; color: #4ade80; }
+    .toast.error { background: #3a1a1a; border: 1px solid #ef4444; color: #f87171; }
+
+    @media (max-width: 768px) {
+      .container { flex-direction: column; padding: 1rem; }
+      .lamp-svg { max-width: 200px; }
+      .lamp-section { padding: 1rem 0 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Lamp -->
+  <div class="lamp-section">
+    <div class="lamp-glow"></div>
+    <svg class="lamp-svg" viewBox="0 0 300 450" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lcg" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+        <clipPath id="mc"><path d="M 125 155 Q 150 190 175 155 Z"/></clipPath>
+      </defs>
+
+      <polygon points="90,180 210,180 320,450 -20,450" fill="url(#lcg)" class="light-cone"/>
+      <ellipse cx="150" cy="400" rx="60" ry="15" fill="#151515"/>
+      <ellipse cx="150" cy="395" rx="60" ry="15" fill="#3a3c40"/>
+      <rect x="140" y="180" width="20" height="220" fill="#2a2c30"/>
+      <rect x="142" y="180" width="8" height="220" fill="#4a4c50"/>
+      <ellipse cx="150" cy="175" rx="90" ry="20" class="shade-inner"/>
+
+      <g class="pull-string-group" onclick="toggleLamp()">
+        <line x1="105" y1="180" x2="105" y2="280" stroke="#555" stroke-width="3"/>
+        <line x1="105" y1="280" x2="105" y2="310" stroke="#888" stroke-width="6" stroke-linecap="round" class="string-handle"/>
+      </g>
+
+      <path d="M 95 60 Q 150 45 205 60 L 240 175 Q 150 195 60 175 Z" class="shade-main"/>
+
+      <g class="face-sleep">
+        <path d="M 115 130 Q 125 140 135 130" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M 165 130 Q 175 140 185 130" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <g class="face-awake">
+        <path d="M 115 130 Q 125 115 135 130" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M 165 130 Q 175 115 185 130" stroke="#111" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <g>
+          <path d="M 125 155 Q 150 190 175 155 Z" fill="#111"/>
+          <path d="M 140 165 Q 150 190 160 165 Z" fill="#f87171" clip-path="url(#mc)"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Login / Register Card -->
+  <div class="login-section">
+    <div class="login-card">
+      <div class="card-header">
+        <div class="logo">💬</div>
+        <h2>ChatApp</h2>
+        <p>Kết nối mọi người, mọi lúc</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">Đăng nhập</button>
+        <button class="tab-btn" onclick="switchTab('register')">Đăng ký</button>
+      </div>
+
+      <!-- Login Panel -->
+      <div class="form-panel active" id="panel-login">
+        <div class="input-group">
+          <label>Tên đăng nhập</label>
+          <div class="input-wrap">
+            <span class="icon">👤</span>
+            <input type="text" id="login-username" placeholder="Nhập username" autocomplete="username" />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Mật khẩu</label>
+          <div class="input-wrap">
+            <span class="icon">🔒</span>
+            <input type="password" id="login-password" placeholder="Nhập mật khẩu" autocomplete="current-password" />
+          </div>
+        </div>
+        <button class="submit-btn" id="login-btn" onclick="doLogin()">
+          Đăng nhập
+          <span class="spinner"></span>
+        </button>
+        <a href="#" class="forgot">Quên mật khẩu?</a>
+      </div>
+
+      <!-- Register Panel -->
+      <div class="form-panel" id="panel-register">
+        <div class="input-group">
+          <label>Tên hiển thị</label>
+          <div class="input-wrap">
+            <span class="icon">✨</span>
+            <input type="text" id="reg-displayname" placeholder="Tên bạn muốn hiển thị" />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Tên đăng nhập</label>
+          <div class="input-wrap">
+            <span class="icon">👤</span>
+            <input type="text" id="reg-username" placeholder="Tối thiểu 3 ký tự" autocomplete="username" />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Mật khẩu</label>
+          <div class="input-wrap">
+            <span class="icon">🔒</span>
+            <input type="password" id="reg-password" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password" />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Xác nhận mật khẩu</label>
+          <div class="input-wrap">
+            <span class="icon">🔑</span>
+            <input type="password" id="reg-confirm" placeholder="Nhập lại mật khẩu" />
+          </div>
+        </div>
+        <button class="submit-btn" id="register-btn" onclick="doRegister()">
+          Tạo tài khoản
+          <span class="spinner"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3001/api';
+
+// ── Lamp states ──────────────────────────────────────────────────────────────
+const states = [
+  { theme:'#2a2c30', glow:'42,44,48', shade:'#2c2c2c', bulb:'#1a1a1a', lop:'0', btnBg:'#2a2c30', btnTxt:'#888', awake:'0', sleep:'1' },
+  { theme:'#22c55e', glow:'34,197,94', shade:'#6c8c73', bulb:'#e6ffe6', lop:'0.15', btnBg:'#22c55e', btnTxt:'#fff', awake:'1', sleep:'0' },
+  { theme:'#2a2c30', glow:'42,44,48', shade:'#2c2c2c', bulb:'#1a1a1a', lop:'0', btnBg:'#2a2c30', btnTxt:'#888', awake:'0', sleep:'1' },
+  { theme:'#f97316', glow:'249,115,22', shade:'#947463', bulb:'#fff0e6', lop:'0.15', btnBg:'#f97316', btnTxt:'#fff', awake:'1', sleep:'0' }
+];
+let stateIdx = 0;
+const R = document.documentElement.style;
+
+function toggleLamp() {
+  const pull = document.querySelector('.pull-string-group');
+  pull.style.transform = 'translateY(15px)';
+  setTimeout(() => pull.style.transform = '', 150);
+  stateIdx = (stateIdx + 1) % states.length;
+  const s = states[stateIdx];
+  R.setProperty('--theme-color', s.theme);
+  R.setProperty('--glow-rgb', s.glow);
+  R.setProperty('--shade', s.shade);
+  R.setProperty('--bulb', s.bulb);
+  R.setProperty('--light-op', s.lop);
+  R.setProperty('--btn-bg', s.btnBg);
+  R.setProperty('--btn-text', s.btnTxt);
+  document.querySelector('.face-awake').style.opacity = s.awake;
+  document.querySelector('.face-sleep').style.opacity = s.sleep;
+  // Update all buttons
+  document.querySelectorAll('.submit-btn').forEach(b => {
+    b.style.background = s.btnBg;
+    b.style.color = s.btnTxt;
+  });
+  document.querySelectorAll('.tab-btn.active').forEach(b => {
+    b.style.background = s.btnBg;
+    b.style.color = s.btnTxt;
+  });
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+  document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+  document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  btn.classList.toggle('loading', loading);
+  btn.disabled = loading;
+  btn.childNodes[0].textContent = loading
+    ? (btnId === 'login-btn' ? ' Đang đăng nhập...' : ' Đang tạo...')
+    : (btnId === 'login-btn' ? 'Đăng nhập' : 'Tạo tài khoản');
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!username || !password) return showToast('Vui lòng điền đầy đủ thông tin', 'error');
+  setLoading('login-btn', true);
+  try {
+    const res = await fetch(`${API}/login`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) return showToast(data.error || 'Đăng nhập thất bại', 'error');
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    showToast(`Chào mừng, ${data.user.displayName}! 🎉`);
+    setTimeout(() => window.location.href = 'chat.html', 1000);
+  } catch {
+    showToast('Không thể kết nối đến server', 'error');
+  } finally {
+    setLoading('login-btn', false);
+  }
+}
+
+// ── Register ──────────────────────────────────────────────────────────────────
+async function doRegister() {
+  const displayName = document.getElementById('reg-displayname').value.trim();
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const confirm = document.getElementById('reg-confirm').value;
+  if (!username || !password) return showToast('Vui lòng điền đầy đủ thông tin', 'error');
+  if (password !== confirm) return showToast('Mật khẩu không khớp', 'error');
+  setLoading('register-btn', true);
+  try {
+    const res = await fetch(`${API}/register`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password, displayName })
+    });
+    const data = await res.json();
+    if (!res.ok) return showToast(data.error || 'Đăng ký thất bại', 'error');
+    showToast('Đăng ký thành công! Đang chuyển hướng...');
+    setTimeout(() => switchTab('login'), 1200);
+  } catch {
+    showToast('Không thể kết nối đến server', 'error');
+  } finally {
+    setLoading('register-btn', false);
+  }
+}
+
+// Enter key
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('panel-login').classList.contains('active')) doLogin();
+  else doRegister();
+});
+
+// Redirect if already logged in
+if (localStorage.getItem('token')) window.location.href = 'chat.html';
+</script>
+</body>
+</html>

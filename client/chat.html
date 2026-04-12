@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChatApp — Tin nhắn</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --sidebar-bg: #0f1520;
+      --chat-bg: #0b0f14;
+      --bubble-me: #1a6b3c;
+      --bubble-other: #1a2030;
+      --input-bg: #131b26;
+      --border: #1e2a3a;
+      --accent: #22c55e;
+      --accent-rgb: 34,197,94;
+      --text: #e2e8f0;
+      --muted: #5a6a7a;
+      --font: 'Poppins', sans-serif;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { height:100%; overflow:hidden; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── SIDEBAR ──────────────────────────────────────────── */
+    .sidebar {
+      width: 340px;
+      min-width: 280px;
+      max-width: 340px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .sidebar-header {
+      padding: 1.2rem 1.2rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      margin-bottom: 1rem;
+    }
+    .my-avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .my-name {
+      font-weight: 600;
+      font-size: .95rem;
+    }
+    .my-status { font-size: .75rem; color: var(--accent); }
+
+    .profile-actions { margin-left: auto; display: flex; gap: .5rem; }
+    .icon-btn {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 1.1rem; padding: .3rem;
+      border-radius: 8px;
+      transition: color .2s, background .2s;
+    }
+    .icon-btn:hover { color: var(--text); background: rgba(255,255,255,.06); }
+
+    .search-bar {
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      background: #0d1520;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: .6rem 1rem .6rem 2.4rem;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: .85rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .search-bar input:focus { border-color: var(--accent); }
+    .search-bar input::placeholder { color: var(--muted); }
+    .search-bar .s-icon {
+      position: absolute; left: .7rem; top: 50%;
+      transform: translateY(-50%); color: var(--muted); font-size: .9rem;
+    }
+
+    .section-label {
+      padding: .8rem 1.2rem .3rem;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: .3rem 0;
+    }
+    .chat-list::-webkit-scrollbar { width: 4px; }
+    .chat-list::-webkit-scrollbar-track { background: transparent; }
+    .chat-list::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 2px; }
+
+    .chat-item {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      padding: .75rem 1.2rem;
+      cursor: pointer;
+      border-radius: 12px;
+      margin: 0 .5rem;
+      transition: background .2s;
+      position: relative;
+    }
+    .chat-item:hover { background: rgba(255,255,255,.04); }
+    .chat-item.active { background: rgba(34,197,94,.1); }
+    .chat-item.active .chat-name { color: var(--accent); }
+
+    .avatar-wrap { position: relative; flex-shrink: 0; }
+    .avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #1e2a3a;
+    }
+    .online-dot {
+      position: absolute;
+      bottom: 1px; right: 1px;
+      width: 11px; height: 11px;
+      background: var(--accent);
+      border-radius: 50%;
+      border: 2px solid var(--sidebar-bg);
+    }
+    .online-dot.offline { background: #4a5568; }
+
+    .chat-info { flex: 1; min-width: 0; }
+    .chat-name { font-size: .9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-preview { font-size: .78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: .1rem; }
+
+    .chat-meta { display: flex; flex-direction: column; align-items: flex-end; gap: .3rem; }
+    .chat-time { font-size: .72rem; color: var(--muted); }
+    .unread-badge {
+      background: var(--accent);
+      color: #000;
+      font-size: .68rem;
+      font-weight: 700;
+      padding: .12rem .4rem;
+      border-radius: 999px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    /* ── MAIN CHAT AREA ───────────────────────────────────── */
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      min-width: 0;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,21,32,.8);
+      backdrop-filter: blur(8px);
+      flex-shrink: 0;
+    }
+    .chat-header .avatar { width: 40px; height: 40px; }
+    .chat-header-info .name { font-weight: 700; font-size: 1rem; }
+    .chat-header-info .status { font-size: .78rem; color: var(--accent); }
+    .header-actions { margin-left: auto; display: flex; gap: .4rem; }
+
+    /* Messages */
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+    .messages-area::-webkit-scrollbar { width: 5px; }
+    .messages-area::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 3px; }
+
+    .empty-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      gap: .8rem;
+    }
+    .empty-chat .emoji { font-size: 3rem; }
+    .empty-chat h3 { font-size: 1.1rem; }
+    .empty-chat p { font-size: .85rem; }
+
+    /* Welcome screen */
+    .welcome-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 2rem;
+    }
+    .welcome-screen .big-icon { font-size: 5rem; margin-bottom: 1rem; }
+    .welcome-screen h2 { font-size: 1.5rem; color: var(--text); margin-bottom: .5rem; }
+
+    /* Date divider */
+    .date-divider {
+      text-align: center;
+      font-size: .73rem;
+      color: var(--muted);
+      margin: .8rem 0;
+      position: relative;
+    }
+    .date-divider::before, .date-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 35%;
+      height: 1px;
+      background: var(--border);
+    }
+    .date-divider::before { left: 0; }
+    .date-divider::after { right: 0; }
+
+    /* Message bubble */
+    .msg-row {
+      display: flex;
+      align-items: flex-end;
+      gap: .5rem;
+      max-width: 75%;
+    }
+    .msg-row.me { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-row.other { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%; object-fit: cover;
+      flex-shrink: 0; margin-bottom: 2px;
+    }
+
+    .msg-bubble {
+      max-width: 100%;
+      padding: .65rem 1rem;
+      border-radius: 16px;
+      font-size: .88rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+      position: relative;
+    }
+    .msg-row.me .msg-bubble {
+      background: var(--bubble-me);
+      border-bottom-right-radius: 4px;
+      color: #e8f8ef;
+    }
+    .msg-row.other .msg-bubble {
+      background: var(--bubble-other);
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .msg-time { font-size: .68rem; color: rgba(255,255,255,.4); margin-top: .3rem; text-align: right; }
+    .msg-row.other .msg-time { text-align: left; }
+
+    /* Image message */
+    .msg-image { max-width: 260px; border-radius: 12px; cursor: pointer; display: block; }
+    .msg-image:hover { opacity: .9; }
+
+    /* Audio message */
+    .msg-audio { width: 220px; }
+    .msg-audio audio { width: 100%; }
+
+    /* File message */
+    .msg-file {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .5rem .8rem; background: rgba(0,0,0,.2);
+      border-radius: 10px; text-decoration: none; color: inherit;
+    }
+    .msg-file .file-icon { font-size: 1.4rem; }
+    .msg-file .file-info .file-name { font-size: .82rem; font-weight: 600; }
+    .msg-file .file-info .file-size { font-size: .72rem; color: var(--muted); }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: none;
+      align-items: center;
+      gap: .5rem;
+      padding: .3rem .5rem;
+      color: var(--muted);
+      font-size: .8rem;
+      font-style: italic;
+    }
+    .typing-dots span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: bounce .9s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: .15s; }
+    .typing-dots span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce {
+      0%,60%,100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    /* ── INPUT BAR ────────────────────────────────────────── */
+    .input-bar {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--sidebar-bg);
+      display: flex;
+      align-items: flex-end;
+      gap: .7rem;
+    }
+
+    .attach-btn, .emoji-btn, .send-btn {
+      background: none; border: none;
+      cursor: pointer; font-size: 1.3rem;
+      padding: .4rem; border-radius: 10px;
+      transition: background .2s, transform .15s;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .attach-btn:hover, .emoji-btn:hover { background: rgba(255,255,255,.06); }
+    .send-btn {
+      background: var(--accent);
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      font-size: 1rem;
+      color: #000;
+    }
+    .send-btn:hover { transform: scale(1.08); }
+    .send-btn:disabled { opacity: .4; transform: none; cursor: not-allowed; }
+
+    .msg-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 22px;
+      padding: .7rem 1.2rem;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: .9rem;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      overflow-y: auto;
+      line-height: 1.4;
+      transition: border-color .2s;
+    }
+    .msg-input:focus { border-color: var(--accent); }
+    .msg-input::placeholder { color: var(--muted); }
+
+    /* File preview above input */
+    .file-preview-bar {
+      padding: .6rem 1.5rem .3rem;
+      background: var(--sidebar-bg);
+      display: none;
+      align-items: center;
+      gap: .8rem;
+      flex-wrap: wrap;
+    }
+    .file-preview-bar.show { display: flex; }
+    .file-preview-item {
+      display: flex; align-items: center; gap: .5rem;
+      background: #131b26; border: 1px solid var(--border);
+      border-radius: 8px; padding: .4rem .7rem;
+      font-size: .8rem; max-width: 200px;
+    }
+    .file-preview-item .remove-file {
+      cursor: pointer; color: #ef4444; margin-left: .3rem; font-size: .9rem;
+    }
+
+    /* Emoji picker */
+    .emoji-picker {
+      position: absolute;
+      bottom: 80px; right: 80px;
+      background: #131b26;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: .8rem;
+      display: none;
+      flex-wrap: wrap;
+      gap: .3rem;
+      width: 280px;
+      z-index: 100;
+      box-shadow: 0 8px 30px rgba(0,0,0,.4);
+    }
+    .emoji-picker.show { display: flex; }
+    .emoji-picker .ep { font-size: 1.3rem; cursor: pointer; padding: .2rem; border-radius: 6px; transition: background .15s; }
+    .emoji-picker .ep:hover { background: rgba(255,255,255,.08); }
+
+    /* File input hidden */
+    #file-input { display: none; }
+    #audio-input { display: none; }
+
+    /* Image lightbox */
+    .lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.88); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .lightbox.show { display: flex; }
+    .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
+    .lightbox-close { position: absolute; top: 1rem; right: 1.5rem; font-size: 1.8rem; cursor: pointer; color: #fff; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(10px);
+      padding: .75rem 1.4rem; border-radius: 10px;
+      font-size: .85rem; font-weight: 500;
+      opacity: 0; transition: all .3s; z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: #1a3a2a; border: 1px solid #22c55e; color: #4ade80; }
+    .toast.error { background: #3a1a1a; border: 1px solid #ef4444; color: #f87171; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 3px; }
+
+    /* Mobile */
+    @media (max-width: 700px) {
+      .sidebar { position: fixed; left: 0; top: 0; z-index: 200; transform: translateX(-100%); transition: transform .3s; }
+      .sidebar.open { transform: translateX(0); }
+      .chat-main { width: 100%; }
+    }
+
+    /* ── SIDEBAR TABS ─────────────────────────────────── */
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .s-tab {
+      flex: 1; padding: .55rem .2rem;
+      border: none; background: none;
+      color: var(--muted); font-family: var(--font);
+      font-size: .75rem; font-weight: 600;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all .2s; letter-spacing: .2px;
+    }
+    .s-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .s-tab:hover:not(.active) { color: var(--text); }
+    .tab-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; min-height: 0; }
+    .tab-panel.active { display: flex; }
+
+    /* ── FRIENDS / GROUPS ─────────────────────────────── */
+    .friends-list { flex: 1; overflow-y: auto; padding: .3rem 0; }
+    .friend-search-wrap {
+      padding: .7rem .8rem .5rem;
+      display: flex; gap: .5rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .friend-search-wrap input {
+      flex: 1; background: #0d1520;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      padding: .5rem .8rem; color: var(--text);
+      font-family: var(--font); font-size: .82rem; outline: none;
+    }
+    .friend-search-wrap input:focus { border-color: var(--accent); }
+    .friend-search-wrap button {
+      background: var(--accent); border: none; border-radius: 8px;
+      padding: .5rem .85rem; color: #000; font-weight: 700;
+      font-family: var(--font); font-size: .78rem; cursor: pointer;
+      white-space: nowrap;
+    }
+    .section-sub {
+      padding: .5rem 1rem .2rem; font-size: .68rem; color: var(--muted);
+      font-weight: 600; letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0;
+    }
+    .friend-item {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .6rem 1rem; border-radius: 10px;
+      margin: 0 .4rem; transition: background .2s;
+    }
+    .friend-item:hover { background: rgba(255,255,255,.04); }
+    .f-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .f-info { flex: 1; min-width: 0; }
+    .f-name { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .f-sub { font-size: .72rem; color: var(--muted); margin-top: .1rem; }
+    .f-actions { display: flex; gap: .35rem; flex-shrink: 0; }
+    .btn-xs {
+      border: none; border-radius: 6px; padding: .28rem .6rem;
+      font-family: var(--font); font-size: .72rem; font-weight: 600;
+      cursor: pointer; transition: all .18s; white-space: nowrap;
+    }
+    .btn-xs.primary { background: var(--accent); color: #000; }
+    .btn-xs.primary:hover { filter: brightness(1.1); }
+    .btn-xs.danger { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+    .btn-xs.danger:hover { background: #ef4444; color: #fff; }
+    .btn-xs.muted { background: #1e2a3a; color: var(--muted); }
+    .btn-xs.ghost { background: none; color: var(--muted); border: 1px solid var(--border); }
+    .btn-xs.ghost:hover { color: var(--text); border-color: var(--accent); }
+    .req-badge {
+      display: inline-block; background: #ef4444; color: #fff;
+      font-size: .62rem; font-weight: 700; padding: .1rem .35rem;
+      border-radius: 999px; margin-left: .3rem; vertical-align: middle;
+    }
+    .group-badge { display: inline-block; background: rgba(34,197,94,.15); color: var(--accent);
+      font-size: .65rem; font-weight: 600; padding: .1rem .4rem; border-radius: 999px; margin-left: .3rem; }
+    .sender-name { font-size: .68rem; color: var(--accent); margin-bottom: .15rem; }
+
+    /* ── MODAL ────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.75); z-index: 500;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: #0f1520; border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.6rem; width: 90%; max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .modal-box h3 { font-size: 1rem; margin-bottom: 1rem; }
+    .modal-input {
+      width: 100%; background: #0d1520; border: 1.5px solid var(--border);
+      border-radius: 8px; padding: .65rem .9rem; color: var(--text);
+      font-family: var(--font); font-size: .88rem; outline: none; margin-bottom: .7rem;
+    }
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-footer { display: flex; gap: .6rem; justify-content: flex-end; margin-top: .8rem; }
+    .member-list { max-height: 190px; overflow-y: auto; margin-bottom: .5rem; }
+    .member-check {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .45rem .3rem; border-radius: 8px; cursor: pointer;
+    }
+    .member-check:hover { background: rgba(255,255,255,.04); }
+    .member-check input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; flex-shrink: 0; }
+    .member-check img { width: 28px; height: 28px; border-radius: 50%; }
+    .member-check span { font-size: .83rem; }
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 2rem; color: var(--muted); text-align: center; gap: .4rem;
+    }
+    .empty-state .es-ico { font-size: 2rem; }
+    .empty-state p { font-size: .8rem; }
+
+
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="user-profile">
+      <img class="my-avatar" id="my-avatar" src="" alt="me"/>
+      <div>
+        <div class="my-name" id="my-name">...</div>
+        <div class="my-status">● Đang hoạt động</div>
+      </div>
+      <div class="profile-actions">
+        <button class="icon-btn" title="Tạo nhóm" onclick="openCreateGroup()">👥</button>
+        <button class="icon-btn" title="Đăng xuất" onclick="doLogout()">🚪</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="sidebar-tabs">
+    <button class="s-tab active" onclick="switchSideTab('chats')">💬 Chat</button>
+    <button class="s-tab" id="tab-friends" onclick="switchSideTab('friends')">👥 Bạn bè</button>
+    <button class="s-tab" onclick="switchSideTab('groups')">🏠 Nhóm</button>
+  </div>
+
+  <!-- Panel: Chat -->
+  <div class="tab-panel active" id="panel-chats">
+    <div style="padding:.6rem .8rem .4rem;">
+      <div class="search-bar" style="position:relative;">
+        <span class="s-icon">🔍</span>
+        <input type="text" placeholder="Tìm kiếm..." id="search-input" oninput="filterChats(this.value)"/>
+      </div>
+    </div>
+    <div class="chat-list" id="chat-list">
+      <div style="padding:1.5rem;text-align:center;color:#5a6a7a;font-size:.85rem">Đang tải...</div>
+    </div>
+  </div>
+
+  <!-- Panel: Bạn bè -->
+  <div class="tab-panel" id="panel-friends">
+    <div class="friend-search-wrap">
+      <input type="text" id="friend-q" placeholder="Tìm username / tên..." onkeydown="if(event.key==='Enter')searchFriends()"/>
+      <button onclick="searchFriends()">Tìm</button>
+    </div>
+    <!-- Lời mời kết bạn -->
+    <div id="req-section" style="display:none">
+      <div class="section-sub">Lời mời kết bạn <span id="req-badge-count" class="req-badge">0</span></div>
+      <div id="req-list"></div>
+    </div>
+    <!-- Kết quả tìm kiếm -->
+    <div id="search-sec" style="display:none">
+      <div class="section-sub">Kết quả tìm kiếm</div>
+      <div id="search-list"></div>
+    </div>
+    <!-- Danh sách bạn bè -->
+    <div class="section-sub">Bạn bè của bạn</div>
+    <div class="friends-list" id="friends-list">
+      <div class="empty-state"><div class="es-ico">🤝</div><p>Chưa có bạn bè.<br/>Tìm kiếm để kết bạn!</p></div>
+    </div>
+  </div>
+
+  <!-- Panel: Nhóm -->
+  <div class="tab-panel" id="panel-groups">
+    <div style="padding:.6rem .8rem .4rem;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <span class="section-sub" style="padding:0">Nhóm của bạn</span>
+      <button class="btn-xs primary" onclick="openCreateGroup()">+ Tạo nhóm</button>
+    </div>
+    <div class="friends-list" id="groups-list">
+      <div class="empty-state"><div class="es-ico">👥</div><p>Chưa có nhóm nào.<br/>Nhấn "+ Tạo nhóm"!</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CHAT -->
+<div class="chat-main" id="chat-main">
+  <!-- Welcome / Header -->
+  <div class="chat-header" id="chat-header" style="display:none">
+    <div class="avatar-wrap">
+      <img class="avatar" id="header-avatar" src="" alt=""/>
+      <div class="online-dot" id="header-dot"></div>
+    </div>
+    <div class="chat-header-info">
+      <div class="name" id="header-name"></div>
+      <div class="status" id="header-status">Đang hoạt động</div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" title="Gọi điện" onclick="showToast('Tính năng sẽ sớm ra mắt!', 'success')">📞</button>
+      <button class="icon-btn" title="Video call" onclick="showToast('Tính năng sẽ sớm ra mắt!', 'success')">🎥</button>
+      <button class="icon-btn" title="Thông tin" onclick="showToast('Tính năng sẽ sớm ra mắt!', 'success')">ℹ️</button>
+    </div>
+  </div>
+
+  <!-- Welcome screen -->
+  <div class="welcome-screen" id="welcome-screen">
+    <div class="big-icon">💬</div>
+    <h2>Chào mừng đến ChatApp!</h2>
+    <p>Chọn một cuộc trò chuyện từ danh sách bên trái để bắt đầu.</p>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages-area" id="messages-area" style="display:none"></div>
+
+  <!-- Typing indicator -->
+  <div class="typing-indicator" id="typing-indicator">
+    <div class="typing-dots"><span></span><span></span><span></span></div>
+    <span id="typing-name">đang gõ...</span>
+  </div>
+
+  <!-- File preview -->
+  <div class="file-preview-bar" id="file-preview-bar"></div>
+
+  <!-- Input Bar -->
+  <div class="input-bar" id="input-bar" style="display:none">
+    <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.txt,.zip" onchange="handleFiles(this.files)"/>
+    <input type="file" id="audio-input" accept="audio/*" onchange="handleAudioFile(this.files)"/>
+    <button class="attach-btn" title="Đính kèm file" onclick="document.getElementById('file-input').click()">📎</button>
+    <button class="emoji-btn" title="Emoji" onclick="toggleEmoji()">😊</button>
+    <textarea class="msg-input" id="msg-input" placeholder="Nhập tin nhắn..." rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this);handleTyping()"></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Gửi">➤</button>
+  </div>
+</div>
+
+<!-- Modal: Tạo nhóm -->
+<div class="modal-overlay" id="modal-group">
+  <div class="modal-box">
+    <h3>👥 Tạo nhóm mới</h3>
+    <input class="modal-input" type="text" id="group-name-inp" placeholder="Tên nhóm..."/>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem;">Chọn thành viên:</div>
+    <div class="member-list" id="member-list"></div>
+    <div class="modal-footer">
+      <button class="btn-xs ghost" onclick="closeModal('modal-group')">Hủy</button>
+      <button class="btn-xs primary" onclick="doCreateGroup()">Tạo nhóm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Emoji Picker -->
+<div class="emoji-picker" id="emoji-picker">
+  😀😂🥹😊😍🥰😎🤔😴😭😤🥳🎉❤️🔥💯✨🙏👋👍👎😡🤯🫣😱🥺
+  💬🌟⚡🎮🎵🏆🍕☕🎂🦋🌈🌙⭐💎🚀🎯🏅🎁💡🔑
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightbox-img" src="" alt=""/>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3001/api';
+const WS_URL = 'ws://localhost:3001';
+
+let ws = null;
+let currentUser = null;
+let currentChatId = null;
+let currentChatUser = null;
+let allUsers = [];
+let myFriends = [];
+let myGroups = [];
+let typingTimer = null;
+let pendingFiles = [];
+
+// ── Safe WS Send ──────────────────────────────────────────────────────────────
+function safeSend(data) {
+  try {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+      return true;
+    }
+  } catch(e) {
+    console.error('[WS] Send error:', e.message);
+  }
+  return false;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  if (!token || !user) return window.location.href = 'index.html';
+  try {
+    currentUser = JSON.parse(user);
+  } catch {
+    localStorage.clear();
+    return window.location.href = 'index.html';
+  }
+  document.getElementById('my-name').textContent = currentUser.displayName;
+  document.getElementById('my-avatar').src = currentUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.username}`;
+  loadUsers();
+  loadFriends();
+  loadGroups();
+  loadFriendRequests();
+  connectWS(token);
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+function connectWS(token) {
+  try { if (ws) ws.close(); } catch {}
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    safeSend({ type: 'auth', token });
+  };
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      handleWSMessage(msg);
+    } catch(err) {
+      console.error('[WS] Parse error:', err);
+    }
+  };
+
+  ws.onclose = () => {
+    console.log('[WS] Disconnected, reconnecting in 3s...');
+    setTimeout(() => {
+      const t = localStorage.getItem('token');
+      if (t) connectWS(t);
+    }, 3000);
+  };
+
+  ws.onerror = (err) => {
+    console.error('[WS] Socket error:', err);
+  };
+}
+
+function handleWSMessage(msg) {
+  try {
+    switch(msg.type) {
+      case 'auth_ok':
+        console.log('[WS] Authenticated ✅');
+        break;
+      case 'message':
+        if (msg.message) onNewMessage(msg.message);
+        break;
+      case 'message_sent':
+        if (msg.message) onMessageSent(msg.message);
+        break;
+      case 'typing':
+        showTyping(msg.from, msg.isTyping);
+        break;
+      case 'user_status':
+        updateUserStatus(msg.userId, msg.online);
+        break;
+      case 'error':
+        console.warn('[WS] Server error:', msg.message);
+        break;
+      case 'friend_request_received':
+        loadFriendRequests();
+        showToast('Có lời mời kết bạn mới! 👋', 'success');
+        break;
+      case 'friend_accepted':
+        loadFriends(); loadUsers();
+        showToast('Lời mời kết bạn đã được chấp nhận! 🎉', 'success');
+        break;
+    }
+  } catch(e) {
+    console.error('[WS] handleWSMessage error:', e.message);
+  }
+}
+
+// ── Load Users ────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  try {
+    const res = await fetch(`${API}/users`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    if (!res.ok) throw new Error('Unauthorized');
+    allUsers = await res.json();
+    renderChatList(allUsers);
+  } catch(e) {
+    console.error('[loadUsers]', e.message);
+    showToast('Không thể tải danh sách', 'error');
+  }
+}
+
+function renderChatList(users) {
+  const list = document.getElementById('chat-list');
+  if (!users || !users.length) {
+    list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:#5a6a7a;font-size:.85rem">Không có người dùng nào</div>';
+    return;
+  }
+  list.innerHTML = users.map(u => `
+    <div class="chat-item ${currentChatId === u.id ? 'active' : ''}"
+         id="chat-item-${u.id}" onclick="openChat('${u.id}')">
+      <div class="avatar-wrap">
+        <img class="avatar" src="${u.avatar}" alt="${u.displayName}"
+             onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}'"/>
+        <div class="online-dot ${u.online ? '' : 'offline'}" id="dot-${u.id}"></div>
+      </div>
+      <div class="chat-info">
+        <div class="chat-name">${u.displayName}</div>
+        <div class="chat-preview" id="preview-${u.id}">${u.isBot ? 'Trò chuyện với AI Bot' : 'Nhấn để bắt đầu chat'}</div>
+      </div>
+      <div class="chat-meta">
+        <div class="chat-time" id="time-${u.id}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterChats(q) {
+  const filtered = allUsers.filter(u =>
+    u.displayName.toLowerCase().includes(q.toLowerCase()) ||
+    u.username.toLowerCase().includes(q.toLowerCase())
+  );
+  renderChatList(filtered);
+}
+
+// ── Open Chat ─────────────────────────────────────────────────────────────────
+async function openChat(userId) {
+  currentChatId = userId;
+  currentChatUser = allUsers.find(u => u.id === userId);
+  if (!currentChatUser) return;
+
+  document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+  const item = document.getElementById(`chat-item-${userId}`);
+  if (item) item.classList.add('active');
+
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('chat-header').style.display = 'flex';
+  document.getElementById('messages-area').style.display = 'flex';
+  document.getElementById('input-bar').style.display = 'flex';
+
+  document.getElementById('header-avatar').src = currentChatUser.avatar;
+  document.getElementById('header-name').textContent = currentChatUser.displayName;
+  document.getElementById('header-status').textContent = currentChatUser.online ? '● Đang hoạt động' : '● Ngoại tuyến';
+  document.getElementById('header-dot').className = `online-dot ${currentChatUser.online ? '' : 'offline'}`;
+
+  await loadMessages(userId);
+  document.getElementById('msg-input').focus();
+}
+
+// ── Load Messages ─────────────────────────────────────────────────────────────
+async function loadMessages(chatId) {
+  const area = document.getElementById('messages-area');
+  area.innerHTML = '<div style="text-align:center;color:#5a6a7a;padding:2rem">Đang tải tin nhắn...</div>';
+  try {
+    const res = await fetch(`${API}/messages/${chatId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const msgs = await res.json();
+    renderMessages(Array.isArray(msgs) ? msgs : []);
+  } catch(e) {
+    console.error('[loadMessages]', e.message);
+    area.innerHTML = '<div style="text-align:center;color:#5a6a7a;padding:2rem">Không thể tải tin nhắn</div>';
+  }
+}
+
+function renderMessages(msgs) {
+  const area = document.getElementById('messages-area');
+  if (!msgs.length) {
+    area.innerHTML = `
+      <div class="empty-chat">
+        <div class="emoji">👋</div>
+        <h3>Bắt đầu cuộc trò chuyện!</h3>
+        <p>Gửi tin nhắn đầu tiên của bạn.</p>
+      </div>`;
+    return;
+  }
+  area.innerHTML = msgs.map(m => buildMsgHTML(m)).join('');
+  scrollBottom();
+}
+
+function buildMsgHTML(msg) {
+  try {
+    const isMe = msg.senderId === currentUser.id;
+    const sender = isMe ? currentUser : (currentChatUser || { avatar: '', displayName: '?' });
+    const time = formatTime(msg.timestamp);
+
+    // Đảm bảo content luôn là string
+    const rawContent = (msg.content !== null && msg.content !== undefined && typeof msg.content !== 'object')
+      ? String(msg.content)
+      : '';
+
+    // Bỏ qua tin nhắn rỗng
+    if (!rawContent && msg.type === 'text') return '';
+
+    let content = '';
+    if (msg.type === 'image') {
+      content = `<img class="msg-image" src="${rawContent}" alt="image" onclick="openLightbox('${rawContent}')"/>`;
+    } else if (msg.type === 'audio') {
+      content = `<div class="msg-audio"><audio controls src="${rawContent}"></audio></div>`;
+    } else if (msg.type === 'file') {
+      content = `<a class="msg-file" href="${rawContent}" target="_blank" download>
+        <span class="file-icon">📄</span>
+        <div class="file-info">
+          <div class="file-name">${msg.fileName || 'File'}</div>
+          <div class="file-size">${formatSize(msg.fileSize)}</div>
+        </div>
+      </a>`;
+    } else {
+      content = escapeHTML(rawContent).replace(/\n/g, '<br>');
+    }
+
+    const isGroup = currentChatUser?.isGroup;
+    const showName = !isMe && isGroup && msg.senderName;
+    return `
+      <div class="msg-row ${isMe ? 'me' : 'other'}" id="msg-${msg.id}">
+        ${!isMe ? `<img class="msg-avatar" src="${msg.senderAvatar || sender.avatar}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=bot'"/>` : ''}
+        <div>
+          ${showName ? `<div class="sender-name">${escapeHTML(msg.senderName)}</div>` : ''}
+          <div class="msg-bubble">${content}</div>
+          <div class="msg-time">${time}${isMe ? (msg.read ? ' ✓✓' : ' ✓') : ''}</div>
+        </div>
+      </div>`;
+  } catch(e) {
+    console.error('[buildMsgHTML] error:', e.message);
+    return '';
+  }
+}
+
+// ── Send Message ──────────────────────────────────────────────────────────────
+async function sendMessage() {
+  try {
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    if (!text && !pendingFiles.length) return;
+    if (!currentChatId) return;
+
+    for (const file of pendingFiles) {
+      await uploadAndSend(file);
+    }
+    clearPendingFiles();
+
+    if (text) {
+      input.value = '';
+      autoResize(input);
+      safeSend({ type: 'message', to: currentChatId, content: text, messageType: 'text' });
+    }
+  } catch(e) {
+    console.error('[sendMessage] error:', e.message);
+    showToast('Gửi thất bại, thử lại!', 'error');
+  }
+}
+
+async function uploadAndSend(file) {
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch(`${API}/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: form
+    });
+    const data = await res.json();
+    safeSend({
+      type: 'message', to: currentChatId,
+      content: data.url, messageType: data.type,
+      fileName: data.name, fileSize: data.size
+    });
+  } catch(e) {
+    console.error('[uploadAndSend]', e.message);
+    showToast('Upload thất bại', 'error');
+  }
+}
+
+// ── WS Message Handlers ───────────────────────────────────────────────────────
+function onNewMessage(msg) {
+  try {
+    const isGroupMsg = currentChatId && currentChatId.startsWith('group_') && msg.receiverId === currentChatId;
+    if (msg.senderId === currentChatId || msg.receiverId === currentChatId || isGroupMsg) {
+      const area = document.getElementById('messages-area');
+      const empty = area.querySelector('.empty-chat');
+      if (empty) empty.remove();
+      const html = buildMsgHTML(msg);
+      if (html) area.insertAdjacentHTML('beforeend', html);
+      scrollBottom();
+    }
+    updatePreview(msg);
+  } catch(e) { console.error('[onNewMessage]', e.message); }
+}
+
+function onMessageSent(msg) {
+  try {
+    const area = document.getElementById('messages-area');
+    const empty = area.querySelector('.empty-chat');
+    if (empty) empty.remove();
+    const html = buildMsgHTML(msg);
+    if (html) area.insertAdjacentHTML('beforeend', html);
+    scrollBottom();
+    updatePreview(msg);
+  } catch(e) { console.error('[onMessageSent]', e.message); }
+}
+
+function updatePreview(msg) {
+  try {
+    const chatId = msg.senderId === currentUser.id ? msg.receiverId : msg.senderId;
+    const prevEl = document.getElementById(`preview-${chatId}`);
+    const timeEl = document.getElementById(`time-${chatId}`);
+    if (prevEl) {
+      const rawContent = (msg.content && typeof msg.content === 'string') ? msg.content : '';
+      const preview = msg.type === 'image' ? '📷 Hình ảnh' :
+                      msg.type === 'audio' ? '🎵 Âm thanh' :
+                      msg.type === 'file'  ? `📄 ${msg.fileName || 'File'}` :
+                      rawContent.substring(0, 35) + (rawContent.length > 35 ? '...' : '');
+      prevEl.textContent = (msg.senderId === currentUser.id ? 'Bạn: ' : '') + preview;
+    }
+    if (timeEl) timeEl.textContent = formatTime(msg.timestamp);
+  } catch(e) { console.error('[updatePreview]', e.message); }
+}
+
+// ── Typing ────────────────────────────────────────────────────────────────────
+function handleTyping() {
+  if (!currentChatId) return;
+  safeSend({ type: 'typing', to: currentChatId, isTyping: true });
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => {
+    safeSend({ type: 'typing', to: currentChatId, isTyping: false });
+  }, 2000);
+}
+
+function showTyping(fromId, isTyping) {
+  // Bỏ qua nếu không phải chat đang mở
+  if (fromId !== currentChatId && !( currentChatId && currentChatId.startsWith('group_') )) return;
+  const el = document.getElementById('typing-indicator');
+  if (el) el.style.display = isTyping ? 'flex' : 'none';
+}
+
+// ── Status ────────────────────────────────────────────────────────────────────
+function updateUserStatus(userId, online) {
+  const dot = document.getElementById(`dot-${userId}`);
+  if (dot) dot.className = `online-dot ${online ? '' : 'offline'}`;
+  if (userId === currentChatId) {
+    const s = document.getElementById('header-status');
+    if (s) s.textContent = online ? '● Đang hoạt động' : '● Ngoại tuyến';
+  }
+  const user = allUsers.find(u => u.id === userId);
+  if (user) user.online = online;
+}
+
+// ── File handling ─────────────────────────────────────────────────────────────
+function handleFiles(files) {
+  for (const file of files) pendingFiles.push(file);
+  renderFilePreviews();
+}
+
+function handleAudioFile(files) {
+  for (const file of files) pendingFiles.push(file);
+  renderFilePreviews();
+}
+
+function renderFilePreviews() {
+  const bar = document.getElementById('file-preview-bar');
+  if (!pendingFiles.length) { bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  bar.innerHTML = pendingFiles.map((f, i) => `
+    <div class="file-preview-item">
+      <span>${f.type.startsWith('image/') ? '🖼️' : f.type.startsWith('audio/') ? '🎵' : '📄'}</span>
+      <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <span class="remove-file" onclick="removePendingFile(${i})">✕</span>
+    </div>`).join('');
+}
+
+function removePendingFile(idx) {
+  pendingFiles.splice(idx, 1);
+  renderFilePreviews();
+}
+
+function clearPendingFiles() {
+  pendingFiles = [];
+  const bar = document.getElementById('file-preview-bar');
+  if (bar) bar.classList.remove('show');
+  const fi = document.getElementById('file-input');
+  if (fi) fi.value = '';
+}
+
+// ── Emoji ─────────────────────────────────────────────────────────────────────
+function toggleEmoji() {
+  document.getElementById('emoji-picker').classList.toggle('show');
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-btn')) {
+    document.getElementById('emoji-picker').classList.remove('show');
+  }
+});
+
+document.getElementById('emoji-picker').addEventListener('click', (e) => {
+  const emoji = e.target.textContent.trim();
+  if (emoji && e.target.classList.contains('ep')) {
+    const input = document.getElementById('msg-input');
+    input.value += emoji;
+    input.focus();
+  }
+});
+
+const picker = document.getElementById('emoji-picker');
+picker.innerHTML = [...picker.textContent].map(ch => ch.trim() ? `<span class="ep">${ch}</span>` : '').join('');
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function scrollBottom() {
+  const a = document.getElementById('messages-area');
+  if (a) a.scrollTop = a.scrollHeight;
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  try { return new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); }
+  catch { return ''; }
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+function escapeHTML(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('show');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function doLogout() {
+  try {
+    await fetch(`${API}/logout`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+  } catch {}
+  localStorage.clear();
+  window.location.href = 'index.html';
+}
+
+
+// ── Sidebar Tabs ──────────────────────────────────────────────────────────────
+function switchSideTab(tab) {
+  document.querySelectorAll('.s-tab').forEach((b, i) => {
+    b.classList.toggle('active', ['chats','friends','groups'][i] === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  if (tab === 'friends') { loadFriends(); loadFriendRequests(); }
+  if (tab === 'groups') loadGroups();
+}
+
+// ── Friends ───────────────────────────────────────────────────────────────────
+async function loadFriends() {
+  try {
+    const res = await fetch(`${API}/friends`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    myFriends = await res.json();
+    renderFriendsList();
+  } catch(e) { console.error('[loadFriends]', e); }
+}
+
+function renderFriendsList() {
+  const list = document.getElementById('friends-list');
+  if (!myFriends.length) {
+    list.innerHTML = '<div class="empty-state"><div class="es-ico">🤝</div><p>Chưa có bạn bè.<br/>Tìm kiếm để kết bạn!</p></div>';
+    return;
+  }
+  list.innerHTML = myFriends.map(u => `
+    <div class="friend-item">
+      <img class="f-avatar" src="${u.avatar}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}'"/>
+      <div class="f-info">
+        <div class="f-name">${u.displayName}</div>
+        <div class="f-sub">${u.online ? '🟢 Đang hoạt động' : '⚫ Ngoại tuyến'}</div>
+      </div>
+      <div class="f-actions">
+        <button class="btn-xs primary" title="Nhắn tin" onclick="chatWithFriend('${u.id}')">💬</button>
+        <button class="btn-xs danger" title="Hủy kết bạn" onclick="unfriend('${u.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function loadFriendRequests() {
+  try {
+    const res = await fetch(`${API}/friends/requests`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const reqs = await res.json();
+    const sec = document.getElementById('req-section');
+    const list = document.getElementById('req-list');
+    const badge = document.getElementById('req-badge-count');
+    if (!reqs.length) { sec.style.display = 'none'; return; }
+    sec.style.display = 'block';
+    if (badge) badge.textContent = reqs.length;
+    // Badge trên tab
+    const tab = document.getElementById('tab-friends');
+    if (tab && !tab.querySelector('.req-badge')) {
+      tab.insertAdjacentHTML('beforeend', `<span class="req-badge" id="tab-req-badge">${reqs.length}</span>`);
+    } else {
+      const b = document.getElementById('tab-req-badge');
+      if (b) b.textContent = reqs.length;
+    }
+    list.innerHTML = reqs.map(u => `
+      <div class="friend-item">
+        <img class="f-avatar" src="${u.avatar}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}'"/>
+        <div class="f-info">
+          <div class="f-name">${u.displayName}</div>
+          <div class="f-sub">Muốn kết bạn với bạn</div>
+        </div>
+        <div class="f-actions">
+          <button class="btn-xs primary" onclick="acceptFriend('${u.requestId}','${u.id}')">✓</button>
+          <button class="btn-xs danger" onclick="rejectFriend('${u.requestId}')">✕</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { console.error('[loadFriendRequests]', e); }
+}
+
+async function searchFriends() {
+  const q = document.getElementById('friend-q').value.trim();
+  if (!q) return;
+  try {
+    const res = await fetch(`${API}/users/search?q=${encodeURIComponent(q)}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const users = await res.json();
+    const sec = document.getElementById('search-sec');
+    const list = document.getElementById('search-list');
+    sec.style.display = 'block';
+    if (!users.length) {
+      list.innerHTML = '<div style="padding:.8rem 1rem;font-size:.8rem;color:var(--muted)">Không tìm thấy ai</div>';
+      return;
+    }
+    list.innerHTML = users.map(u => {
+      let btn = '';
+      if (u.friendStatus === 'accepted')
+        btn = '<span class="btn-xs muted">✓ Bạn bè</span>';
+      else if (u.friendStatus === 'pending' && u.friendRequestFrom === currentUser.id)
+        btn = '<span class="btn-xs muted">Đã gửi</span>';
+      else if (u.friendStatus === 'pending')
+        btn = `<button class="btn-xs primary" onclick="acceptFriendByUser('${u.id}')">Chấp nhận</button>`;
+      else
+        btn = `<button class="btn-xs primary" onclick="sendFriendReq('${u.id}',this)">+ Kết bạn</button>`;
+      return `
+        <div class="friend-item">
+          <img class="f-avatar" src="${u.avatar}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}'"/>
+          <div class="f-info">
+            <div class="f-name">${u.displayName}</div>
+            <div class="f-sub">@${u.username}</div>
+          </div>
+          <div class="f-actions">${btn}</div>
+        </div>`;
+    }).join('');
+  } catch(e) { showToast('Lỗi tìm kiếm', 'error'); }
+}
+
+async function sendFriendReq(targetId, btnEl) {
+  try {
+    const res = await fetch(`${API}/friends/request`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ targetId })
+    });
+    const data = await res.json();
+    if (!res.ok) return showToast(data.error, 'error');
+    if (btnEl) { btnEl.textContent = 'Đã gửi'; btnEl.disabled = true; btnEl.className = 'btn-xs muted'; }
+    safeSend({ type: 'friend_notify', to: targetId, event: 'friend_request_received' });
+    showToast('Đã gửi lời mời kết bạn! 👋', 'success');
+  } catch { showToast('Lỗi kết nối', 'error'); }
+}
+
+async function acceptFriend(requestId, fromId) {
+  try {
+    const res = await fetch(`${API}/friends/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ requestId })
+    });
+    if (!res.ok) return;
+    safeSend({ type: 'friend_notify', to: fromId, event: 'friend_accepted' });
+    showToast('Đã kết bạn! 🎉', 'success');
+    loadFriends(); loadFriendRequests(); loadUsers();
+    // Xoá badge
+    const b = document.getElementById('tab-req-badge');
+    const reqs = document.querySelectorAll('#req-list .friend-item');
+    if (reqs.length <= 1 && b) b.remove();
+  } catch { showToast('Lỗi kết nối', 'error'); }
+}
+
+async function acceptFriendByUser(userId) {
+  // Tìm requestId từ danh sách requests
+  try {
+    const res = await fetch(`${API}/friends/requests`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const reqs = await res.json();
+    const req = reqs.find(r => r.id === userId || r.username === userId);
+    // Fallback: reload requests then accept
+    loadFriendRequests();
+    showToast('Vào tab "Lời mời" để chấp nhận!', 'success');
+  } catch {}
+}
+
+async function rejectFriend(requestId) {
+  try {
+    await fetch(`${API}/friends/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ requestId })
+    });
+    loadFriendRequests();
+    showToast('Đã từ chối', 'success');
+  } catch {}
+}
+
+async function unfriend(friendId) {
+  if (!confirm('Bạn chắc chắn muốn hủy kết bạn?')) return;
+  try {
+    await fetch(`${API}/friends/${friendId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    loadFriends();
+    showToast('Đã hủy kết bạn', 'success');
+  } catch {}
+}
+
+function chatWithFriend(userId) {
+  switchSideTab('chats');
+  setTimeout(() => openChat(userId), 100);
+}
+
+// ── Groups ────────────────────────────────────────────────────────────────────
+async function loadGroups() {
+  try {
+    const res = await fetch(`${API}/groups`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    myGroups = await res.json();
+    renderGroupsList();
+  } catch(e) { console.error('[loadGroups]', e); }
+}
+
+function renderGroupsList() {
+  const list = document.getElementById('groups-list');
+  if (!myGroups.length) {
+    list.innerHTML = '<div class="empty-state"><div class="es-ico">👥</div><p>Chưa có nhóm nào.<br/>Nhấn "+ Tạo nhóm"!</p></div>';
+    return;
+  }
+  list.innerHTML = myGroups.map(g => `
+    <div class="chat-item ${currentChatId === 'group_' + g.id ? 'active' : ''}" onclick="openGroupChat('${g.id}')">
+      <div class="avatar-wrap">
+        <img class="avatar" src="${g.avatar}" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=${g.id}'"/>
+      </div>
+      <div class="chat-info">
+        <div class="chat-name">${g.name} <span class="group-badge">Nhóm</span></div>
+        <div class="chat-preview">${g.members.length} thành viên</div>
+      </div>
+    </div>`).join('');
+}
+
+function openCreateGroup() {
+  // Load danh sách chọn thành viên
+  const list = document.getElementById('member-list');
+  const pool = [...myFriends];
+  // Thêm user chưa kết bạn nếu có trong allUsers
+  allUsers.forEach(u => {
+    if (!u.isBot && !pool.find(f => f.id === u.id) && u.id !== currentUser.id) pool.push(u);
+  });
+  const seen = new Set();
+  const unique = pool.filter(u => { if(seen.has(u.id)) return false; seen.add(u.id); return true; });
+  list.innerHTML = unique.length ? unique.map(u => `
+    <label class="member-check">
+      <input type="checkbox" value="${u.id}"/>
+      <img src="${u.avatar}" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}'" width="28" height="28" style="border-radius:50%"/>
+      <span>${u.displayName}</span>
+    </label>`).join('') :
+    '<div style="padding:.5rem;color:var(--muted);font-size:.8rem">Kết bạn trước rồi tạo nhóm!</div>';
+  document.getElementById('group-name-inp').value = '';
+  document.getElementById('modal-group').classList.add('show');
+}
+
+async function doCreateGroup() {
+  const name = document.getElementById('group-name-inp').value.trim();
+  if (!name) return showToast('Nhập tên nhóm!', 'error');
+  const memberIds = [...document.querySelectorAll('#member-list input:checked')].map(i => i.value);
+  if (!memberIds.length) return showToast('Chọn ít nhất 1 thành viên!', 'error');
+  try {
+    const res = await fetch(`${API}/groups`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ name, memberIds })
+    });
+    const data = await res.json();
+    if (!res.ok) return showToast(data.error, 'error');
+    closeModal('modal-group');
+    showToast(`Đã tạo nhóm "${name}"! 🎉`, 'success');
+    await loadGroups();
+    openGroupChat(data.group.id);
+    switchSideTab('groups');
+  } catch { showToast('Lỗi tạo nhóm', 'error'); }
+}
+
+async function openGroupChat(groupId) {
+  currentChatId = 'group_' + groupId;
+  const group = myGroups.find(g => g.id === groupId);
+  if (!group) return;
+  currentChatUser = { ...group, isGroup: true };
+
+  document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('chat-header').style.display = 'flex';
+  document.getElementById('messages-area').style.display = 'flex';
+  document.getElementById('input-bar').style.display = 'flex';
+
+  document.getElementById('header-avatar').src = group.avatar;
+  document.getElementById('header-name').innerHTML = `${group.name} <span class="group-badge">Nhóm</span>`;
+  document.getElementById('header-status').textContent = `${group.members.length} thành viên`;
+  const dot = document.getElementById('header-dot');
+  if (dot) dot.style.display = 'none';
+
+  await loadMessages(currentChatId);
+  document.getElementById('msg-input').focus();
+  renderGroupsList(); // cập nhật active state
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// Đóng modal khi click overlay
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+
+
+// Start
+init();
+</script>
+</body>
+</html>

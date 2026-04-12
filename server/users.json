@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ee8950ec-dae4-40cc-b4e5-6ce1642f4e6a",
+    "username": "hunne",
+    "password": "$2a$10$bE.axupaY3BLCUenjVH39ehhcbvDCmv7UhSdeLuLiF6vQL3VIWplm",
+    "displayName": "Hung",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=hunne",
+    "createdAt": "2026-04-12T02:57:37.728Z",
+    "online": true
+  },
+  {
+    "id": "c3176890-0168-41e1-b8b7-087c96a45999",
+    "username": "thinne",
+    "password": "$2a$10$z4jYnV33/2K4sQUbI8GCZOC5vR36TI1muz.k7r/PS1CqD5.Yw2q4W",
+    "displayName": "Thinh",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=thinne",
+    "createdAt": "2026-04-12T02:57:47.481Z",
+    "online": false
+  }
+]

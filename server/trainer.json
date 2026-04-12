@@ -1,0 +1,72 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": ["xin chào", "hello", "hi", "chào", "hey", "alo", "chào bot", "hello bot"],
+      "responses": ["Xin chào! Tôi có thể giúp gì cho bạn hôm nay? 😊", "Chào bạn! Rất vui được gặp bạn!", "Hello! Tôi là trợ lý AI, bạn cần hỗ trợ gì không?"]
+    },
+    {
+      "tag": "goodbye",
+      "patterns": ["tạm biệt", "bye", "goodbye", "hẹn gặp lại", "bai", "gặp lại sau"],
+      "responses": ["Tạm biệt! Chúc bạn một ngày tốt lành! 👋", "Hẹn gặp lại bạn nhé! 😊", "Bye bye! Nếu cần gì cứ nhắn tôi nhé!"]
+    },
+    {
+      "tag": "thanks",
+      "patterns": ["cảm ơn", "thank you", "thanks", "cám ơn", "cảm ơn nhiều", "thank"],
+      "responses": ["Không có gì! Rất vui được giúp bạn 😊", "Bạn không cần cảm ơn! Đó là việc tôi nên làm.", "Vui lòng! Bạn cần thêm gì không?"]
+    },
+    {
+      "tag": "help",
+      "patterns": ["giúp tôi", "help", "hỗ trợ", "tôi cần giúp đỡ", "giúp đỡ", "bạn có thể làm gì"],
+      "responses": ["Tôi có thể giúp bạn: trả lời câu hỏi, tư vấn, trò chuyện, hoặc cung cấp thông tin. Bạn cần gì?", "Tôi sẵn sàng hỗ trợ bạn! Hãy cho tôi biết bạn cần gì nhé."]
+    },
+    {
+      "tag": "name",
+      "patterns": ["bạn tên gì", "tên bạn là gì", "who are you", "bạn là ai", "tên là gì"],
+      "responses": ["Tôi là ChatBot AI, được tạo để hỗ trợ bạn! 🤖", "Tôi là trợ lý AI của ứng dụng này. Bạn có thể gọi tôi là Bot!"]
+    },
+    {
+      "tag": "weather",
+      "patterns": ["thời tiết", "weather", "hôm nay trời thế nào", "trời có mưa không", "nhiệt độ"],
+      "responses": ["Xin lỗi, tôi chưa có khả năng kiểm tra thời tiết thực tế. Bạn có thể dùng Google Weather hoặc trang web thời tiết nhé!", "Để xem thời tiết, bạn có thể truy cập weather.com hoặc tìm kiếm 'thời tiết [tên thành phố]' trên Google."]
+    },
+    {
+      "tag": "time",
+      "patterns": ["mấy giờ rồi", "bây giờ mấy giờ", "thời gian", "what time", "giờ hiện tại"],
+      "responses": ["Bạn có thể xem giờ hiện tại ở góc màn hình nhé! ⏰", "Tôi không có đồng hồ tích hợp, nhưng thiết bị của bạn sẽ hiển thị giờ chính xác!"]
+    },
+    {
+      "tag": "joke",
+      "patterns": ["kể chuyện cười", "joke", "hài hước", "cười nào", "funny"],
+      "responses": [
+        "Tại sao lập trình viên không thích thiên nhiên? Vì có quá nhiều bugs! 🐛😂",
+        "Một con tắc kè hoa nói với con kia: 'Bạn làm mình ghen tị quá!' 🦎",
+        "Tại sao người ta không bao giờ tin máy tính? Vì nó có quá nhiều Windows! 🖥️😄"
+      ]
+    },
+    {
+      "tag": "how_are_you",
+      "patterns": ["bạn có khỏe không", "how are you", "khỏe không", "bạn thế nào", "bạn ổn không"],
+      "responses": ["Tôi đang rất tốt, cảm ơn bạn đã hỏi! 😊 Còn bạn thì sao?", "Tôi luôn ở trạng thái tốt nhất để phục vụ bạn! Bạn khỏe không?"]
+    },
+    {
+      "tag": "age",
+      "patterns": ["bạn bao nhiêu tuổi", "how old are you", "tuổi bạn", "sinh năm nào"],
+      "responses": ["Tôi là AI nên không có tuổi theo nghĩa thông thường! 😄 Nhưng tôi mới được tạo ra gần đây.", "Tôi không có tuổi - tôi là AI! Mỗi ngày tôi đều như mới vậy 🤖"]
+    },
+    {
+      "tag": "love",
+      "patterns": ["bạn có biết yêu không", "bạn có cảm xúc không", "tôi yêu bạn", "bạn thích gì"],
+      "responses": ["Tôi là AI nên không có cảm xúc, nhưng tôi được lập trình để luôn quan tâm đến bạn! 💙", "Cảm ơn bạn! Tôi không có cảm xúc như con người, nhưng tôi luôn cố gắng hết sức để giúp đỡ bạn!"]
+    },
+    {
+      "tag": "default",
+      "patterns": [],
+      "responses": [
+        "Hmm, tôi chưa hiểu câu hỏi của bạn. Bạn có thể nói rõ hơn không? 🤔",
+        "Xin lỗi, tôi không hiểu. Bạn có thể thử cách diễn đạt khác không?",
+        "Câu hỏi thú vị đấy! Nhưng tôi chưa được huấn luyện để trả lời điều này. Thử hỏi tôi điều khác nhé!"
+      ]
+    }
+  ]
+}

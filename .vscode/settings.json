@@ -1,0 +1,9 @@
+{
+  "liveServer.settings.ignore": [
+    ".vscode",
+    "**/.git/**",
+    "**/node_modules/**",
+    "server/**"
+  ],
+  "liveServer.settings.root": "/client"
+}
