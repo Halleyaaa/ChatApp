@@ -1,2 +1,7 @@
 node_modules
 .env
+user.jsons
+friends.json
+groups.json
+messages.json
+uploads/

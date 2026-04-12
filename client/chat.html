@@ -721,8 +721,16 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'http://localhost:3001/api';
-const WS_URL = 'ws://localhost:3001';
+// ── Auto-detect server URL (local hoặc Render) ──────────────────────────────
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const SERVER_HTTP = IS_LOCAL
+  ? 'http://localhost:3001'
+  : `${window.location.protocol}//${window.location.hostname}`;
+const SERVER_WS = IS_LOCAL
+  ? 'ws://localhost:3001'
+  : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}`;
+const API = `${SERVER_HTTP}/api`;
+const WS_URL = SERVER_WS;
 
 let ws = null;
 let currentUser = null;

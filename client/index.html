@@ -372,7 +372,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'http://localhost:3001/api';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const SERVER_HTTP = IS_LOCAL ? 'http://localhost:3001' : `${window.location.protocol}//${window.location.hostname}`;
+const API = `${SERVER_HTTP}/api`;
 
 // ── Lamp states ──────────────────────────────────────────────────────────────
 const states = [

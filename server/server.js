@@ -42,14 +42,14 @@ if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 // ─── Helpers: File DB ─────────────────────────────────────────────────────────
 const readJSON = (file) => {
-  const fp = path.join(DATA_DIR, file);
-  if (!fs.existsSync(fp)) return (file.includes('messages') || file.includes('groups')) ? {} : [];
-  try { return JSON.parse(fs.readFileSync(fp, 'utf8')); }
-  catch { return (file.includes('messages') || file.includes('groups')) ? {} : []; }
+    const fp = path.join(DATA_DIR, file);
+    if (!fs.existsSync(fp)) return (file.includes('messages') || file.includes('groups')) ? {} : [];
+    try { return JSON.parse(fs.readFileSync(fp, 'utf8')); }
+    catch { return (file.includes('messages') || file.includes('groups')) ? {} : []; }
 };
 const writeJSON = (file, data) => {
-  try { fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2)); }
-  catch (e) { console.error('[DB] Write error:', e.message); }
+    try { fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2)); }
+    catch (e) { console.error('[DB] Write error:', e.message); }
 };
 
 // ─── Safe WS Send ─────────────────────────────────────────────────────────────
@@ -128,9 +128,22 @@ async function getBotResponse(message) {
   return String(d[Math.floor(Math.random() * d.length)]);
 }
 // ─── Express ──────────────────────────────────────────────────────────────────
-app.use(cors({ origin: '*' }));
+app.use(cors({
+  origin: '*',
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
+
+// Serve client files (cho Render deployment)
+const CLIENT_DIR = path.join(__dirname, '..', 'client');
+if (require('fs').existsSync(CLIENT_DIR)) {
+  app.use(express.static(CLIENT_DIR));
+  app.get('/', (req, res) => res.sendFile(path.join(CLIENT_DIR, 'index.html')));
+  app.get('/chat', (req, res) => res.sendFile(path.join(CLIENT_DIR, 'chat.html')));
+  console.log('📦 Serving client from:', CLIENT_DIR);
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
@@ -145,18 +158,40 @@ const upload = multer({
   }
 });
 
-const allowedOrigins = ['http://localhost:3001', 'https://chatapp-1-c6by.onrender.com'];
+const allowedOrigins = [
+    'http://localhost:3001',
+    'http://127.0.0.1:5500', 
+    'https://chatapp-1-c6by.onrender.com'
+];
+
 app.use(cors({
-    origin: function(origin, callback) {
-        // Cho phép request từ localhost hoặc domain chính thức
+    origin: function (origin, callback) {
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Thiếu thông tin' });
+    console.log("Đang xử lý đăng nhập cho:", username);
+    const users = readJSON('users.json');
+    const user = users.find(u => u.username === username);
+    if (!user) return res.status(401).json({ error: 'Tài khoản không tồn tại' });
+    if (!await bcrypt.compare(password, user.password)) return res.status(401).json({ error: 'Sai mật khẩu' });
+    user.online = true;
+    writeJSON('users.json', users);
+    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+    const { password: _, ...safe } = user;
+    res.json({ token, user: safe });
+  } catch (e) { console.error('[Login]', e.message); res.status(500).json({ error: 'Lỗi server' }); }
+});
 
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
@@ -189,19 +224,31 @@ app.post('/api/register', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Thiếu thông tin' });
-    const users = readJSON('users.json');
-    const user = users.find(u => u.username === username);
-    if (!user) return res.status(401).json({ error: 'Tài khoản không tồn tại' });
-    if (!await bcrypt.compare(password, user.password)) return res.status(401).json({ error: 'Sai mật khẩu' });
-    user.online = true;
-    writeJSON('users.json', users);
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-    const { password: _, ...safe } = user;
-    res.json({ token, user: safe });
-  } catch (e) { res.status(500).json({ error: 'Lỗi server' }); }
+    try {
+        const { username, password } = req.body;
+        console.log("Đang xử lý đăng nhập cho:", username);
+        
+        const users = readJSON('users.json');
+        const user = users.find(u => u.username === username);
+        
+        if (!user) return res.status(401).json({ error: 'Tài khoản không tồn tại' });
+        
+        // Kiểm tra mật khẩu (Sử dụng bcrypt)
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(401).json({ error: 'Sai mật khẩu' });
+        
+        // Cập nhật trạng thái
+        user.online = true;
+        writeJSON('users.json', users);
+        
+        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+        const { password: _, ...safe } = user;
+        
+        return res.status(200).json({ token, user: safe });
+    } catch (e) { 
+        console.error("Lỗi đăng nhập:", e);
+        res.status(500).json({ error: 'Lỗi server' }); 
+    }
 });
 
 app.post('/api/logout', authMiddleware, (req, res) => {
