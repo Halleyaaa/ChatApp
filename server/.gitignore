@@ -1,7 +1,25 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment
 .env
-user.jsons
+
+# Data files — KHÔNG commit lên GitHub
+users.json
 friends.json
 groups.json
 messages.json
+
+# Uploads
 uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+.dist/
