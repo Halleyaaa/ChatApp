@@ -16,7 +16,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const app = express();
 
+app.use(express.static(path.join(__dirname, '../client')));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/index.html'));
+});
 // ─── Config ──────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'chatapp_super_secret_key_2024';
