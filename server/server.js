@@ -145,6 +145,19 @@ const upload = multer({
   }
 });
 
+const allowedOrigins = ['http://localhost:3000', 'https://chatapp-1-c6by.onrender.com'];
+app.use(cors({
+    origin: function(origin, callback) {
+        // Cho phép request từ localhost hoặc domain chính thức
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
+
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'No token' });
