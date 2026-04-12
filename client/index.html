@@ -372,8 +372,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const SERVER_HTTP = IS_LOCAL ? 'http://localhost:3001' : `${window.location.protocol}//${window.location.hostname}`;
+const _host = window.location.hostname;
+const _isLocalNetwork = (_host==='localhost'||_host==='127.0.0.1'||/^192\.168\./.test(_host)||/^10\./.test(_host)||/^172\.(1[6-9]|2[0-9]|3[01])\./.test(_host));
+const SERVER_HTTP = _isLocalNetwork ? `http://${_host}:3001` : `${window.location.protocol}//${window.location.host}`;
 const API = `${SERVER_HTTP}/api`;
 
 // ── Lamp states ──────────────────────────────────────────────────────────────
