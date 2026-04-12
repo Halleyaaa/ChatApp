@@ -145,7 +145,7 @@ const upload = multer({
   }
 });
 
-const allowedOrigins = ['http://localhost:3000', 'https://chatapp-1-c6by.onrender.com'];
+const allowedOrigins = ['http://localhost:3001', 'https://chatapp-1-c6by.onrender.com'];
 app.use(cors({
     origin: function(origin, callback) {
         // Cho phép request từ localhost hoặc domain chính thức
