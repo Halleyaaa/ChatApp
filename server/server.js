@@ -128,7 +128,6 @@ async function getBotResponse(message) {
   return String(d[Math.floor(Math.random() * d.length)]);
 }
 // ─── Express ──────────────────────────────────────────────────────────────────
-const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
