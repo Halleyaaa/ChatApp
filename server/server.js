@@ -1,12 +1,6 @@
-/**
- * ChatApp Server — MongoDB Edition
- * Storage: MongoDB Atlas (cloud) thay cho JSON files
- */
-
 require('dotenv').config();
 
-// ── Fix querySrv ECONNREFUSED trên Windows ────────────────────────────────────
-// Override DNS resolver sang Google (8.8.8.8) để resolve SRV record của Atlas
+
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 
@@ -88,16 +82,14 @@ async function connectDB() {
     process.exit(1);
   }
 
-  // Đảm bảo URI có tên database
   let uri = MONGO_URI;
-  // Nếu URI không có database name (kết thúc bằng .net/ hoặc .net/?)
   if (/\.mongodb\.net\/?(\?|$)/.test(uri)) {
     uri = uri.replace(/\.mongodb\.net\/?(\?)/, '.mongodb.net/chatapp$1');
     console.log('[DB] Đã tự động thêm database name: chatapp');
   }
 
   const opts = {
-    family:              4,        // Force IPv4 — fix lỗi querySrv ECONNREFUSED trên Windows
+    family:              4,       
     serverSelectionTimeoutMS: 10000,
     connectTimeoutMS:         10000,
     socketTimeoutMS:          45000,
@@ -106,14 +98,14 @@ async function connectDB() {
   let retries = 3;
   while (retries > 0) {
     try {
-      await mongoose.connect(uri, opts);
-      console.log('✅ MongoDB connected!');
+      await mongoose.connect(uri, opts); 
+      console.log('MongoDB connected!');
       return;
     } catch (e) {
       retries--;
-      console.error(`❌ MongoDB connection failed (còn ${retries} lần thử):`, e.message);
+      console.error(`MongoDB connection failed (còn ${retries} lần thử):`, e.message);
       if (retries === 0) {
-        console.error('\n💡 Gợi ý fix:\n  1. Vào Atlas → Network Access → Add 0.0.0.0/0\n  2. Kiểm tra username/password trong MONGO_URI\n  3. Đảm bảo MONGO_URI có tên database: .../chatapp?...');
+        console.error('\n 1. Vào Atlas → Network Access → Add 0.0.0.0/0\n  2. Kiểm tra username/password trong MONGO_URI\n  3. Đảm bảo MONGO_URI có tên database: .../chatapp?...');
         process.exit(1);
       }
       await new Promise(r => setTimeout(r, 3000)); // chờ 3s rồi thử lại
@@ -445,7 +437,7 @@ wss.on('connection', (ws) => {
           await User.updateOne({ id: userId }, { online: true });
           safeSend(ws, { type: 'auth_ok', userId });
           broadcastStatus(userId, true);
-          console.log(`[WS] ✅ ${decoded.username}`);
+          console.log(`[WS] ${decoded.username}`);
         } catch { safeSend(ws, { type: 'error', message: 'Invalid token' }); }
         return;
       }
@@ -551,7 +543,7 @@ wss.on('connection', (ws) => {
       clients.delete(userId);
       broadcastStatus(userId, false);
       await User.updateOne({ id: userId }, { online: false }).catch(() => {});
-      console.log(`[WS] ❌ ${userId}`);
+      console.log(`[WS] ${userId}`);
     }
   });
 
@@ -570,13 +562,20 @@ process.on('unhandledRejection', r   => console.error('[SERVER] Rejection:', r))
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 connectDB().then(() => {
-  server.listen(PORT, () => {
-    console.log(`\n╔══════════════════════════════════════╗`);
-    console.log(`║       ChatApp Server — MongoDB       ║`);
-    console.log(`║  HTTP → http://localhost:${PORT}        ║`);
-    console.log(`║  WS   → ws://localhost:${PORT}          ║`);
-    console.log(`╚══════════════════════════════════════╝\n`);
-    console.log('🤖 Gemini:', GEMINI_KEY ? 'ENABLED ✅' : 'DISABLED');
-    console.log('✅ Ready!\n');
+  // '0.0.0.0' → bind tất cả interface: localhost + LAN IP + Render
+  server.listen(PORT, '0.0.0.0', () => {
+    // Lấy IP LAN để in ra console cho tiện
+    const os = require('os');
+    const lanIP = Object.values(os.networkInterfaces())
+      .flat().find(i => i.family === 'IPv4' && !i.internal)?.address || 'unknown';
+
+    console.log(`\n╔══════════════════════════════════════════════╗`);
+    console.log(`║        ChatApp Server — MongoDB              ║`);
+    console.log(`║  Local  → http://localhost:${PORT}              ║`);
+    console.log(`║  LAN    → http://${lanIP}:${PORT}`.padEnd(49) + '║');
+    console.log(`║  WS     → ws://0.0.0.0:${PORT} (all interfaces) ║`);
+    console.log(`╚══════════════════════════════════════════════╝\n`);
+    console.log('Gemini:', GEMINI_KEY ? 'ENABLED ○ ' : 'DISABLED');
+    console.log('○ Ready! Listening on ALL interfaces\n');
   });
 });

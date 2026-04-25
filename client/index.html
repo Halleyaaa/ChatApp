@@ -454,7 +454,7 @@ async function doLogin() {
     if (!res.ok) return showToast(data.error || 'Đăng nhập thất bại', 'error');
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
-    showToast(`Chào mừng, ${data.user.displayName}! 🎉`);
+    showToast(`Chào mừng, ${data.user.displayName}! `);
     setTimeout(() => window.location.href = 'chat.html', 1000);
   } catch {
     showToast('Không thể kết nối đến server', 'error');
