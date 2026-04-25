@@ -572,8 +572,8 @@ connectDB().then(() => {
     console.log(`║  Local → http://localhost:${PORT}               ║`);
     console.log(`║  LAN   → http://${lanIP}:${PORT}`.padEnd(49) + '║');
     console.log(`╚══════════════════════════════════════════════╝\n`);
-    console.log('🤖 Gemini:', GEMINI_KEY ? 'ENABLED ✅' : 'DISABLED');
-    console.log('✅ Ready!\n');
+    console.log('Gemini:', GEMINI_KEY ? 'ENABLED ◘ ' : 'DISABLED');
+    console.log('◘ Ready!\n');
 
     // Khởi động CLI sau khi server sẵn sàng
     startCLI();
@@ -650,7 +650,7 @@ function startCLI() {
               key: r, count: await Message.countDocuments({ roomKey: r })
             })));
             console.log(`\n  Tổng: ${rooms.length} room(s)`);
-            counts.forEach(r => console.log(`  💬 ${r.key}  (${r.count} tin)`));
+            counts.forEach(r => console.log(`  ${r.key}  (${r.count} tin)`));
             break;
           }
 
@@ -659,7 +659,7 @@ function startCLI() {
             const gs = await Group.find({});
             if (!gs.length) { console.log('  Chưa có nhóm nào.'); break; }
             console.log(`\n  Tổng: ${gs.length} nhóm`);
-            gs.forEach(g => console.log(`  👥 [${g.id.slice(0,8)}] "${g.name}" — ${g.members.length} thành viên`));
+            gs.forEach(g => console.log(`  [${g.id.slice(0,8)}] "${g.name}" — ${g.members.length} thành viên`));
             break;
           }
 
@@ -670,18 +670,18 @@ function startCLI() {
             if (!toId || !text) { console.log('  Dùng: msg <userId> <nội dung>'); break; }
 
             const rws = clients.get(toId);
-            if (!rws) { console.log(`  ❌ User ${toId} không online.`); break; }
+            if (!rws) { console.log(`  User ${toId} không online.`); break; }
 
             // Lưu vào DB
             const roomKey = [toId, 'server'].sort().join('_');
             const m = new Message({
               roomKey, senderId: 'server', receiverId: toId,
-              content: `📢 [Server] ${text}`, type: 'text'
+              content: `[Server] ${text}`, type: 'text'
             });
             await m.save();
 
             safeSend(rws, { type: 'message', message: m.toObject() });
-            console.log(`  ✅ Đã gửi đến ${toId}: "${text}"`);
+            console.log(`  Đã gửi đến ${toId}: "${text}"`);
             break;
           }
 
@@ -695,13 +695,13 @@ function startCLI() {
               const roomKey = [uid, 'server'].sort().join('_');
               const m = new Message({
                 roomKey, senderId: 'server', receiverId: uid,
-                content: `📢 [Thông báo] ${text}`, type: 'text'
+                content: `[Thông báo] ${text}`, type: 'text'
               });
               await m.save();
               safeSend(rws, { type: 'message', message: m.toObject() });
               count++;
             }
-            console.log(`  ✅ Đã broadcast đến ${count} user(s).`);
+            console.log(`  Đã broadcast đến ${count} user(s).`);
             break;
           }
 
@@ -710,11 +710,11 @@ function startCLI() {
             const toId = parts[1];
             if (!toId) { console.log('  Dùng: kick <userId>'); break; }
             const rws = clients.get(toId);
-            if (!rws) { console.log(`  ❌ User ${toId} không online.`); break; }
+            if (!rws) { console.log(`  User ${toId} không online.`); break; }
             safeSend(rws, { type: 'error', message: 'Bạn đã bị ngắt kết nối bởi server.' });
             rws.terminate();
             clients.delete(toId);
-            console.log(`  ✅ Đã kick ${toId}.`);
+            console.log(`  Đã kick ${toId}.`);
             break;
           }
 
@@ -799,11 +799,11 @@ function startCLI() {
           case '': break;
 
           default: {
-            console.log(`  ❓ Lệnh không hợp lệ: "${cmd}". Gõ "help" để xem danh sách lệnh.`);
+            console.log(`  Lệnh không hợp lệ: "${cmd}". Gõ "help" để xem danh sách lệnh.`);
           }
         }
       } catch(e) {
-        console.error('  ❌ Lỗi CLI:', e.message);
+        console.error('  Lỗi CLI:', e.message);
       }
 
       prompt();
