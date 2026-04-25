@@ -562,20 +562,251 @@ process.on('unhandledRejection', r   => console.error('[SERVER] Rejection:', r))
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 connectDB().then(() => {
-  // '0.0.0.0' → bind tất cả interface: localhost + LAN IP + Render
-  server.listen(PORT, '0.0.0.0', () => {
-    // Lấy IP LAN để in ra console cho tiện
-    const os = require('os');
-    const lanIP = Object.values(os.networkInterfaces())
-      .flat().find(i => i.family === 'IPv4' && !i.internal)?.address || 'unknown';
+  const os = require('os');
+  const lanIP = Object.values(os.networkInterfaces())
+    .flat().find(i => i?.family === 'IPv4' && !i.internal)?.address || 'unknown';
 
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n╔══════════════════════════════════════════════╗`);
     console.log(`║        ChatApp Server — MongoDB              ║`);
-    console.log(`║  Local  → http://localhost:${PORT}              ║`);
-    console.log(`║  LAN    → http://${lanIP}:${PORT}`.padEnd(49) + '║');
-    console.log(`║  WS     → ws://0.0.0.0:${PORT} (all interfaces) ║`);
+    console.log(`║  Local → http://localhost:${PORT}               ║`);
+    console.log(`║  LAN   → http://${lanIP}:${PORT}`.padEnd(49) + '║');
     console.log(`╚══════════════════════════════════════════════╝\n`);
-    console.log('Gemini:', GEMINI_KEY ? 'ENABLED ○ ' : 'DISABLED');
-    console.log('○ Ready! Listening on ALL interfaces\n');
+    console.log('🤖 Gemini:', GEMINI_KEY ? 'ENABLED ✅' : 'DISABLED');
+    console.log('✅ Ready!\n');
+
+    // Khởi động CLI sau khi server sẵn sàng
+    startCLI();
   });
 });
+
+// ─── Server CLI ───────────────────────────────────────────────────────────────
+function startCLI() {
+  const readline = require('readline');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  const HELP = `
+╔══════════════════════════════════════════════════════════════╗
+║                  ChatApp Server — CLI                        ║
+╠══════════════════════════════════════════════════════════════╣
+║  who              Danh sách user đang online                 ║
+║  users            Tất cả user trong database                 ║
+║  rooms            Danh sách room/conversation hiện có        ║
+║  groups           Danh sách nhóm chat                        ║
+║  msg <userId> <nội dung>   Gửi tin nhắn từ SERVER đến user   ║
+║  broadcast <nội dung>      Gửi thông báo đến TẤT CẢ user     ║
+║  kick <userId>             Ngắt kết nối 1 user               ║
+║  kickall                   Ngắt tất cả kết nối               ║
+║  history <userId/roomKey>  Xem lịch sử chat                  ║
+║  stats                     Thống kê server                   ║
+║  clear                     Xoá màn hình console              ║
+║  help                      Hiển thị menu này                 ║
+║  exit / quit               Tắt server                        ║
+╚══════════════════════════════════════════════════════════════╝`;
+
+  console.log(HELP);
+  prompt();
+
+  function prompt() {
+    rl.question('\n[SERVER]> ', async (input) => {
+      const line  = input.trim();
+      const parts = line.split(' ');
+      const cmd   = parts[0].toLowerCase();
+
+      try {
+        switch(cmd) {
+
+          // ── who ─────────────────────────────────────────────────────────
+          case 'who': {
+            if (clients.size === 0) {
+              console.log('  Không có ai online.');
+            } else {
+              console.log(`\n  Online: ${clients.size} user(s)`);
+              const users = await User.find({ id: { $in: [...clients.keys()] } }, 'id username displayName');
+              clients.forEach((ws, id) => {
+                const u = users.find(u => u.id === id);
+                console.log(`  ● [${id.slice(0,8)}...] ${u?.displayName || '?'} (@${u?.username || id})`);
+              });
+            }
+            break;
+          }
+
+          // ── users ────────────────────────────────────────────────────────
+          case 'users': {
+            const all = await User.find({}, 'id username displayName online createdAt');
+            console.log(`\n  Tổng: ${all.length} user(s)`);
+            all.forEach(u => {
+              const dot = u.online ? '🟢' : '⚫';
+              const date = new Date(u.createdAt).toLocaleDateString('vi-VN');
+              console.log(`  ${dot} [${u.id.slice(0,8)}] ${u.displayName} (@${u.username}) — đăng ký ${date}`);
+            });
+            break;
+          }
+
+          // ── rooms ────────────────────────────────────────────────────────
+          case 'rooms': {
+            const rooms = await Message.distinct('roomKey');
+            const counts = await Promise.all(rooms.map(async r => ({
+              key: r, count: await Message.countDocuments({ roomKey: r })
+            })));
+            console.log(`\n  Tổng: ${rooms.length} room(s)`);
+            counts.forEach(r => console.log(`  💬 ${r.key}  (${r.count} tin)`));
+            break;
+          }
+
+          // ── groups ───────────────────────────────────────────────────────
+          case 'groups': {
+            const gs = await Group.find({});
+            if (!gs.length) { console.log('  Chưa có nhóm nào.'); break; }
+            console.log(`\n  Tổng: ${gs.length} nhóm`);
+            gs.forEach(g => console.log(`  👥 [${g.id.slice(0,8)}] "${g.name}" — ${g.members.length} thành viên`));
+            break;
+          }
+
+          // ── msg <userId> <text> ──────────────────────────────────────────
+          case 'msg': {
+            const toId   = parts[1];
+            const text   = parts.slice(2).join(' ');
+            if (!toId || !text) { console.log('  Dùng: msg <userId> <nội dung>'); break; }
+
+            const rws = clients.get(toId);
+            if (!rws) { console.log(`  ❌ User ${toId} không online.`); break; }
+
+            // Lưu vào DB
+            const roomKey = [toId, 'server'].sort().join('_');
+            const m = new Message({
+              roomKey, senderId: 'server', receiverId: toId,
+              content: `📢 [Server] ${text}`, type: 'text'
+            });
+            await m.save();
+
+            safeSend(rws, { type: 'message', message: m.toObject() });
+            console.log(`  ✅ Đã gửi đến ${toId}: "${text}"`);
+            break;
+          }
+
+          // ── broadcast <text> ─────────────────────────────────────────────
+          case 'broadcast': {
+            const text = parts.slice(1).join(' ');
+            if (!text) { console.log('  Dùng: broadcast <nội dung>'); break; }
+
+            let count = 0;
+            for (const [uid, rws] of clients) {
+              const roomKey = [uid, 'server'].sort().join('_');
+              const m = new Message({
+                roomKey, senderId: 'server', receiverId: uid,
+                content: `📢 [Thông báo] ${text}`, type: 'text'
+              });
+              await m.save();
+              safeSend(rws, { type: 'message', message: m.toObject() });
+              count++;
+            }
+            console.log(`  ✅ Đã broadcast đến ${count} user(s).`);
+            break;
+          }
+
+          // ── kick <userId> ────────────────────────────────────────────────
+          case 'kick': {
+            const toId = parts[1];
+            if (!toId) { console.log('  Dùng: kick <userId>'); break; }
+            const rws = clients.get(toId);
+            if (!rws) { console.log(`  ❌ User ${toId} không online.`); break; }
+            safeSend(rws, { type: 'error', message: 'Bạn đã bị ngắt kết nối bởi server.' });
+            rws.terminate();
+            clients.delete(toId);
+            console.log(`  ✅ Đã kick ${toId}.`);
+            break;
+          }
+
+          // ── kickall ──────────────────────────────────────────────────────
+          case 'kickall': {
+            const count = clients.size;
+            clients.forEach((rws, uid) => {
+              safeSend(rws, { type: 'error', message: 'Server đang khởi động lại.' });
+              rws.terminate();
+            });
+            clients.clear();
+            await User.updateMany({}, { online: false });
+            console.log(`  ✅ Đã kick ${count} user(s) và reset trạng thái online.`);
+            break;
+          }
+
+          // ── history <key> ────────────────────────────────────────────────
+          case 'history': {
+            const key = parts[1];
+            if (!key) { console.log('  Dùng: history <userId hoặc roomKey>'); break; }
+            // Nếu là userId → lấy tất cả room của user đó
+            const msgs = await Message.find({
+              roomKey: { $regex: key }
+            }).sort({ timestamp: 1 }).limit(20).lean();
+            if (!msgs.length) { console.log('  Không tìm thấy tin nhắn.'); break; }
+            console.log(`\n  === Lịch sử (${msgs.length} tin gần nhất) ===`);
+            msgs.forEach(m => {
+              const t = new Date(m.timestamp).toLocaleTimeString('vi-VN');
+              const who = m.senderId === 'bot' ? '🤖 Bot' : m.senderId === 'server' ? '🖥️ Server' : `👤 ${m.senderId.slice(0,6)}`;
+              console.log(`  [${t}] ${who}: ${m.content}`);
+            });
+            break;
+          }
+
+          // ── stats ────────────────────────────────────────────────────────
+          case 'stats': {
+            const [uCount, mCount, fCount, gCount] = await Promise.all([
+              User.countDocuments(),
+              Message.countDocuments(),
+              Friend.countDocuments({ status: 'accepted' }),
+              Group.countDocuments()
+            ]);
+            const mem = process.memoryUsage();
+            const upSec = Math.floor(process.uptime());
+            const h = Math.floor(upSec/3600), m = Math.floor((upSec%3600)/60), sc = upSec%60;
+            console.log(`\n  ╔═══ Server Stats ════════════════╗`);
+            console.log(`  ║  Online   : ${clients.size} user(s)`.padEnd(38) + '║');
+            console.log(`  ║  Users    : ${uCount} tổng`.padEnd(38) + '║');
+            console.log(`  ║  Messages : ${mCount} tổng`.padEnd(38) + '║');
+            console.log(`  ║  Friends  : ${fCount} cặp`.padEnd(38) + '║');
+            console.log(`  ║  Groups   : ${gCount} nhóm`.padEnd(38) + '║');
+            console.log(`  ║  Uptime   : ${h}h ${m}m ${sc}s`.padEnd(38) + '║');
+            console.log(`  ║  RAM      : ${Math.round(mem.heapUsed/1024/1024)} MB used`.padEnd(38) + '║');
+            console.log(`  ╚════════════════════════════════╝`);
+            break;
+          }
+
+          // ── clear ────────────────────────────────────────────────────────
+          case 'clear':
+          case 'cls': {
+            process.stdout.write('\x1Bc');
+            break;
+          }
+
+          // ── help ─────────────────────────────────────────────────────────
+          case 'help':
+          case '?': {
+            console.log(HELP);
+            break;
+          }
+
+          // ── exit / quit ──────────────────────────────────────────────────
+          case 'exit':
+          case 'quit': {
+            console.log('\n  Đang tắt server...');
+            await User.updateMany({}, { online: false });
+            clients.forEach(ws => ws.terminate());
+            rl.close();
+            process.exit(0);
+          }
+
+          case '': break;
+
+          default: {
+            console.log(`  ❓ Lệnh không hợp lệ: "${cmd}". Gõ "help" để xem danh sách lệnh.`);
+          }
+        }
+      } catch(e) {
+        console.error('  ❌ Lỗi CLI:', e.message);
+      }
+
+      prompt();
+    });
+  }
+}
